@@ -4,11 +4,7 @@ PIHFILES := $(wildcard RPi/*.h)
 SERVERFILES := $(wildcard Server/*.c)
 SERVERHFILES := $(wildcard Server/*.h)
 
-all: system
-
-system: $(PIFILES) $(PIHFILES) $(SERVERFILES) $(SERVERHFILES)
-		gcc -Wall -lpthread -lpigpio -Ofast -o pi $(PIFILES)
-		gcc -Wall -Ofast -o server $(SERVERFILES)
+all: pi server
 
 pi: $(PIFILES) $(PIHFILES) 
 		gcc -Wall -lpthread -lpigpio -Ofast -o pi $(PIFILES)
