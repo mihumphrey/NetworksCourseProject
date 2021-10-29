@@ -1,17 +1,10 @@
 #include <pigpio.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <fcntl.h> // for open
-#include <unistd.h> // for close
-#include <pthread.h>
-#include <signal.h>
+#include <unistd.h>
 
 #define NUM_SENSORS 2
 #define SENSOR_1 22
@@ -22,8 +15,14 @@
 
 #define PORT 8888
 
-#define ASSERT(arg, err) if (!(arg)) {fprintf(stderr,"\033[31mError, %s, exiting...\033[0m\n", err); exit(1);} 
-
+#define ASSERT(arg, err) \
+			if (!(arg)) {\
+				fprintf(stderr,"\033[31mError, %s: \n\t", err);\
+				perror("");\
+				fprintf(stderr, "exiting...\n");\
+				printf("\033[0m");\
+				exit(1);\
+			}
 
 void getInput(uint8_t sensors[NUM_SENSORS], bool levels[NUM_SENSORS]);
 void checkLevels(bool levels[NUM_SENSORS], int server);
@@ -70,27 +69,21 @@ void checkLevels(bool levels[NUM_SENSORS], int server) {
 }
 
 int connectToServer() {
-    int sockfd, connfd;
-    struct sockaddr_in servaddr, cli;
+    int sockfd;
+    struct sockaddr_in servaddr;
    
-    // socket create and varification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     ASSERT(sockfd != -1, "client failed to create socket");
     printf("Socket successfully created..\n");
     bzero(&servaddr, sizeof(servaddr));
    
-    // assign IP, PORT
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr("138.67.190.221");
     servaddr.sin_port = htons(PORT);
    
-    // connect the client socket to server socket
     ASSERT(connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == 0, "failed to connect to server");
     printf("connected to the server..\n");
 
-//    char buff[32];
-//    write(sockfd, buff, sizeof(buff));
-//    bzero(buff, strlen(buff));
     return sockfd;
 }
 
