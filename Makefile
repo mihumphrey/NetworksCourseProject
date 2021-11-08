@@ -1,8 +1,8 @@
 PIFILES := $(wildcard RPi/*.c)
 PIHFILES := $(wildcard RPi/*.h)
 
-SERVERFILES := $(wildcard Server/*.c)
-SERVERHFILES := $(wildcard Server/*.h)
+SERVERFILES := $(wildcard ServerFolder/*.c)
+SERVERHFILES := $(wildcard ServerFolder/*.h)
 
 all: pi server
 
