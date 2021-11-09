@@ -69,23 +69,19 @@ int main(int argc , char *argv[]) {
 		memcpy(&p->time, buff + MESSAGE_LEN, sizeof(uint64_t));
 		memcpy(&p->seqnum, buff + MESSAGE_LEN + sizeof(uint64_t), sizeof(uint64_t));
 		printf("FROM CLIENT: %s\n", p->message);
-		printf("SEQNUM: %ld\n", p->seqnum);
 		struct timespec ts;
 		timespec_get(&ts, TIME_UTC);
 		uint64_t us = SEC_TO_US((uint64_t)ts.tv_sec) + NS_TO_US((uint64_t)ts.tv_nsec);
 		if (expected != p->seqnum) {
-			printf("PACKET LOSS ON PACKET: %ld\n", expected);
 			numLost++;
 		}
 
 		uint64_t newLatency = (us - p->time);
-		printf("LATENCY: %ld us\n", newLatency);
 		latency = getAverageLatency(latency, expected, newLatency);
 		expected++;
 	}
 	
 	if (read_size == 0) {
-		puts("Client disconnected");
 		fflush(stdout);
 		printf("Average latency: %ld us\n", latency);
 		printf("Packet loss: %d of %ld --> %f%%\n", numLost, expected, (float)numLost/expected);
