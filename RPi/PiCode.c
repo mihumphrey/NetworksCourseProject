@@ -64,7 +64,7 @@ void getInput(uint8_t sensors[NUM_SENSORS], bool levels[NUM_SENSORS]) {
     for (uint8_t i = 0; i < NUM_SENSORS; i++) {
         if (gpioRead(sensors[i]) == DRY) {
             levels[i] = DRY;
-            printf("SENSOR %d IS DRY\n", sensors[i]);
+            //printf("SENSOR %d IS DRY\n", sensors[i]);
         } else {
             levels[i] = WET;
         }
