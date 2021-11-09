@@ -9,9 +9,6 @@ all: pi server
 pi: $(PIFILES) $(PIHFILES) 
 		gcc -lpthread -lpigpio -o pi $(PIFILES)
 
-pi: $(PIFILES) $(PIHFILES) 
-		gcc -o pi $(PIFILES)
-
 server: $(SERVERFILES) $(SERVERHFILES)
 		gcc -Wall -Ofast -o server $(SERVERFILES)
 

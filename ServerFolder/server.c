@@ -77,6 +77,8 @@ int main(int argc , char *argv[]) {
 		}
 
 		uint64_t newLatency = (us - p->time);
+				printf("TIME: %ld\n", newLatency);
+
 		latency = getAverageLatency(latency, expected, newLatency);
 		expected++;
 	}
