@@ -117,7 +117,7 @@ void pingServer(int server, uint64_t *seq) {
     seqnum++;
     char buff[sizeof(Packet)];
 
-    //printf("SENDING PACKET WITH SEQNUM %ld AND TIME %ld\n", p->seqnum, p->time);
+    printf("SENDING PACKET WITH SEQNUM %ld AND TIME %ld\n", p->seqnum, p->time);
 
     memcpy(buff, p->message, MESSAGE_LEN);
     memcpy(buff + MESSAGE_LEN, &p->time, sizeof(uint64_t));
