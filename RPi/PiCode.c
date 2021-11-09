@@ -1,10 +1,11 @@
-#include <pigpio.h>
+//#include <pigpio.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <time.h>
 
 #define NUM_SENSORS 2
 #define SENSOR_1 22
@@ -17,6 +18,11 @@
 
 #define PORT 8888
 
+#define SEC_TO_US(sec) ((sec)*1000000)
+#define NS_TO_US(ns)    ((ns)/1000)
+
+
+
 #define ASSERT(arg, err) \
 			if (!(arg)) {\
 				fprintf(stderr,"\033[31mError, %s: \n\t", err);\
@@ -28,24 +34,26 @@
 
 typedef struct __Packet__ {
     char message[MESSAGE_LEN];
-    time_t time;
+    uint64_t time;
     uint64_t seqnum; 
 } Packet;
 
 void getInput(uint8_t sensors[NUM_SENSORS], bool levels[NUM_SENSORS]);
-void checkLevels(bool levels[NUM_SENSORS], int server);
+void checkLevels(bool levels[NUM_SENSORS], int server, uint64_t *seq);
 int connectToServer();
-void pingServer(int server);
+void pingServer(int server, uint64_t *seq);
+
+uint64_t seqnum = 0;
 
 int main() {
     int server = connectToServer();
     uint8_t sensors[NUM_SENSORS] = {SENSOR_1, SENSOR_2};
-    bool levels[NUM_SENSORS] = {WET}; 
+    bool levels[NUM_SENSORS] = {DRY}; 
     uint64_t seq = 0;
-    gpioInitialise();
+    //gpioInitialise();
     while (1) {
         getInput(sensors, levels);
-        checkLevels(levels, server, seq);
+        checkLevels(levels, server, &seq);
         sleep(DELAY);
     }
     close(server);
@@ -54,23 +62,24 @@ int main() {
 
 void getInput(uint8_t sensors[NUM_SENSORS], bool levels[NUM_SENSORS]) {
     for (uint8_t i = 0; i < NUM_SENSORS; i++) {
-        if (gpioRead(sensors[i]) == DRY) {
+        /*if (gpioRead(sensors[i]) == DRY) {
             levels[i] = DRY;
             printf("SENSOR %d IS DRY\n", sensors[i]);
         } else {
             levels[i] = WET;
-        }
+        }*/
     }
 }
 
-void checkLevels(bool levels[NUM_SENSORS], int server, uint64_t seq) {
+void checkLevels(bool levels[NUM_SENSORS], int server, uint64_t *seq) {
     bool allDry = true;
-    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
+    /*for (uint8_t i = 0; i < NUM_SENSORS; i++) {
         if (levels[i] == WET) {
+            printf("FOUND WET, %d\n", i);
             allDry = false;
             break;
         }
-    }
+    }*/
     if (allDry) {
         printf("all dry\n");
         pingServer(server, seq);
@@ -99,13 +108,21 @@ int connectToServer() {
 void pingServer(int server, uint64_t *seq) {
     Packet *p = malloc(sizeof(Packet));
     memcpy(p->message, "PLANT NEEDS WATERING", MESSAGE_LEN);
-    p->time = time();
-    p->seqnum = *(seq++);
+
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    uint64_t us = SEC_TO_US((uint64_t)ts.tv_sec) + NS_TO_US((uint64_t)ts.tv_nsec);
+
+    p->time = us;
+    p->seqnum = seqnum;
+    seqnum++;
     char buff[sizeof(Packet)];
 
+    printf("SENDING PACKET WITH SEQNUM %ld AND TIME %ld\n", p->seqnum, p->time);
+
     memcpy(buff, p->message, MESSAGE_LEN);
-    memcpy(buff + MESSAGE_LEN, p->time, sizeof(time_t));
-    memcpy(buff + MESSAGE_LEN + sizeof(time_t), p->seqnum, sizeof(u_int64_t));
+    memcpy(buff + MESSAGE_LEN, &p->time, sizeof(uint64_t));
+    memcpy(buff + MESSAGE_LEN + sizeof(uint64_t), &p->seqnum, sizeof(uint64_t));
     
     strcpy(buff, "PLANT NEEDS WATERING");
     write(server, buff, sizeof(buff));
