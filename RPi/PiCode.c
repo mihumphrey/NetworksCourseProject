@@ -80,7 +80,7 @@ void checkLevels(bool levels[NUM_SENSORS], int server, uint64_t *seq) {
         }
     }
     if (allDry) {
-        printf("all dry\n");
+        //printf("all dry\n");
         pingServer(server, seq);
     }
 }
