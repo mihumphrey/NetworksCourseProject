@@ -75,7 +75,6 @@ void checkLevels(bool levels[NUM_SENSORS], int server, uint64_t *seq) {
     bool allDry = true;
     for (uint8_t i = 0; i < NUM_SENSORS; i++) {
         if (levels[i] == WET) {
-            printf("FOUND WET, %d\n", i);
             allDry = false;
             break;
         }
