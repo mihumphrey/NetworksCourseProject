@@ -1,4 +1,4 @@
-//#include <pigpio.h>
+#include <pigpio.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -48,9 +48,9 @@ uint64_t seqnum = 0;
 int main() {
     int server = connectToServer();
     uint8_t sensors[NUM_SENSORS] = {SENSOR_1, SENSOR_2};
-    bool levels[NUM_SENSORS] = {DRY}; 
+    bool levels[NUM_SENSORS] = {WET}; 
     uint64_t seq = 0;
-    //gpioInitialise();
+    gpioInitialise();
     while (1) {
         getInput(sensors, levels);
         checkLevels(levels, server, &seq);
@@ -62,24 +62,24 @@ int main() {
 
 void getInput(uint8_t sensors[NUM_SENSORS], bool levels[NUM_SENSORS]) {
     for (uint8_t i = 0; i < NUM_SENSORS; i++) {
-        /*if (gpioRead(sensors[i]) == DRY) {
+        if (gpioRead(sensors[i]) == DRY) {
             levels[i] = DRY;
             printf("SENSOR %d IS DRY\n", sensors[i]);
         } else {
             levels[i] = WET;
-        }*/
+        }
     }
 }
 
 void checkLevels(bool levels[NUM_SENSORS], int server, uint64_t *seq) {
     bool allDry = true;
-    /*for (uint8_t i = 0; i < NUM_SENSORS; i++) {
+    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
         if (levels[i] == WET) {
             printf("FOUND WET, %d\n", i);
             allDry = false;
             break;
         }
-    }*/
+    }
     if (allDry) {
         printf("all dry\n");
         pingServer(server, seq);
