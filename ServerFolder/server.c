@@ -74,10 +74,12 @@ int main(int argc , char *argv[]) {
 		uint64_t us = SEC_TO_US((uint64_t)ts.tv_sec) + NS_TO_US((uint64_t)ts.tv_nsec);
 		if (expected != p->seqnum) {
 			numLost++;
+			printf("\tPACKET LOSS\n");
 		}
+		printf("\tNO PACKET LOSS ON PACKET: %ld\n", p->seqnum);
 
 		uint64_t newLatency = (us - p->time);
-				printf("TIME: %ld\n", newLatency);
+		printf("\tLATENCY: %ld\n\n", newLatency);
 
 		latency = getAverageLatency(latency, expected, newLatency);
 		expected++;
