@@ -13,6 +13,8 @@
 #define DRY 1
 #define DELAY 1
 
+#define MESSAGE_LEN 21
+
 #define PORT 8888
 
 #define ASSERT(arg, err) \
@@ -24,6 +26,12 @@
 				exit(1);\
 			}
 
+typedef struct __Packet__ {
+    char message[MESSAGE_LEN];
+    time_t time;
+    uint64_t seqnum; 
+} Packet;
+
 void getInput(uint8_t sensors[NUM_SENSORS], bool levels[NUM_SENSORS]);
 void checkLevels(bool levels[NUM_SENSORS], int server);
 int connectToServer();
@@ -32,11 +40,12 @@ void pingServer(int server);
 int main() {
     int server = connectToServer();
     uint8_t sensors[NUM_SENSORS] = {SENSOR_1, SENSOR_2};
-    bool levels[NUM_SENSORS] = {WET};
+    bool levels[NUM_SENSORS] = {WET}; 
+    uint64_t seq = 0;
     gpioInitialise();
     while (1) {
         getInput(sensors, levels);
-        checkLevels(levels, server);
+        checkLevels(levels, server, seq);
         sleep(DELAY);
     }
     close(server);
@@ -54,7 +63,7 @@ void getInput(uint8_t sensors[NUM_SENSORS], bool levels[NUM_SENSORS]) {
     }
 }
 
-void checkLevels(bool levels[NUM_SENSORS], int server) {
+void checkLevels(bool levels[NUM_SENSORS], int server, uint64_t seq) {
     bool allDry = true;
     for (uint8_t i = 0; i < NUM_SENSORS; i++) {
         if (levels[i] == WET) {
@@ -64,7 +73,7 @@ void checkLevels(bool levels[NUM_SENSORS], int server) {
     }
     if (allDry) {
         printf("all dry\n");
-        pingServer(server);
+        pingServer(server, seq);
     }
 }
 
@@ -87,8 +96,17 @@ int connectToServer() {
     return sockfd;
 }
 
-void pingServer(int server) {
-    char buff[64];
+void pingServer(int server, uint64_t *seq) {
+    Packet *p = malloc(sizeof(Packet));
+    memcpy(p->message, "PLANT NEEDS WATERING", MESSAGE_LEN);
+    p->time = time();
+    p->seqnum = *(seq++);
+    char buff[sizeof(Packet)];
+
+    memcpy(buff, p->message, MESSAGE_LEN);
+    memcpy(buff + MESSAGE_LEN, p->time, sizeof(time_t));
+    memcpy(buff + MESSAGE_LEN + sizeof(time_t), p->seqnum, sizeof(u_int64_t));
+    
     strcpy(buff, "PLANT NEEDS WATERING");
     write(server, buff, sizeof(buff));
     printf("WROTE: %s TO CLIENT\n", buff);
