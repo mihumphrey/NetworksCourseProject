@@ -80,11 +80,17 @@ int connectToServer() {
     printf("Socket successfully created..\n");
     bzero(&servaddr, sizeof(servaddr));
    
+   	printf("Server Address Setup\n"); 
+
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr("209.97.232.75");
     servaddr.sin_port = htons(PORT);
+
+    printf("Server Address Setup Done\n");
+
+    printf("connecting to server\n");
    
-    ASSERT(connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == 0, "failed to connect to server");
+    ASSERT(connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == 0, "failed to connect to server\n");
     printf("connected to the server..\n");
 
     return sockfd;
