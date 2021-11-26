@@ -8,6 +8,17 @@
 #include <arpa/inet.h>	//inet_addr
 #include <unistd.h>	//write
 #include <stdlib.h>
+#include <time.h>
+
+#define MESSAGE_LEN 21
+#define SEC_TO_US(sec) ((sec)*1000000)
+#define NS_TO_US(ns)    ((ns)/1000)
+
+
+uint64_t expected = 0;
+uint16_t numLost = 0;
+uint64_t latency = 0;
+uint64_t getAverageLatency(uint64_t current, uint64_t numPackets, uint64_t new);
 
 #define ASSERT(arg, err) \
 			if (!(arg)) {\
@@ -18,12 +29,16 @@
 				exit(1);\
 			}
 
-int main(int argc , char *argv[])
-{
-	printf("Starting\n");
+typedef struct __Packet__ {
+    char message[MESSAGE_LEN];
+    uint64_t time;
+    uint64_t seqnum; 
+} Packet;
+
+int main(int argc , char *argv[]) {
 	int socket_desc , client_sock , c , read_size;
 	struct sockaddr_in server , client;
-	char client_message[256];
+	char buff[sizeof(Packet)];
 	
 	printf("Creating Socket\n");
 	//Create socket
@@ -54,14 +69,33 @@ int main(int argc , char *argv[])
 	client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
 	ASSERT(client_sock >= 0, "failed to accept connection")	
 	//Receive a message from client
-	while ((read_size = read(client_sock , client_message , 256)) > 0 ){
+	while ((read_size = read(client_sock , buff , sizeof(Packet))) > 0 ){
 		//Send the message back to client
-		printf("FROM CLIENT: %s\n", client_message);
+		Packet *p = malloc(sizeof(Packet));
+		memcpy(p->message, buff, MESSAGE_LEN);
+		memcpy(&p->time, buff + MESSAGE_LEN, sizeof(uint64_t));
+		memcpy(&p->seqnum, buff + MESSAGE_LEN + sizeof(uint64_t), sizeof(uint64_t));
+		printf("FROM CLIENT: %s\n", p->message);
+		struct timespec ts;
+		timespec_get(&ts, TIME_UTC);
+		uint64_t us = SEC_TO_US((uint64_t)ts.tv_sec) + NS_TO_US((uint64_t)ts.tv_nsec);
+		if (expected != p->seqnum) {
+			numLost++;
+			printf("\tPACKET LOSS\n");
+		}
+		printf("\tNO PACKET LOSS ON PACKET: %ld\n", p->seqnum);
+
+		uint64_t newLatency = (us - p->time);
+		printf("\tLATENCY: %ld\n\n", newLatency);
+
+		latency = getAverageLatency(latency, expected, newLatency);
+		expected++;
 	}
 	
 	if (read_size == 0) {
-		puts("Client disconnected");
 		fflush(stdout);
+		printf("Average latency: %ld us\n", latency);
+		printf("Packet loss: %d of %ld --> %f%%\n", numLost, expected, (float)numLost/expected);
 	}
 	else if (read_size == -1) {
 		perror("recv failed");
@@ -69,3 +103,14 @@ int main(int argc , char *argv[])
 	
 	return 0;
 }
+<<<<<<< HEAD
+=======
+
+uint64_t getAverageLatency(uint64_t current, uint64_t numPackets, uint64_t new) {
+	current *= numPackets;
+	current += new;
+	current /= numPackets + 1;
+
+	return current;
+}
+>>>>>>> ca6ea1d9bcbf51394aac7ae195ff071c5a36a57c

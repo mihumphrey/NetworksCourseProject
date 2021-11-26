@@ -34,42 +34,8 @@ int main() {
         pingServer(server);
         sleep(1);
     }
-    /*uint8_t sensors[NUM_SENSORS] = {SENSOR_1, SENSOR_2};
-    bool levels[NUM_SENSORS] = {WET};
-    gpioInitialise();
-    while (1) {
-        getInput(sensors, levels);
-        checkLevels(levels, server);
-        sleep(DELAY);
-    }
-    close(server);*/
     return 0;
 }
-
-/*void getInput(uint8_t sensors[NUM_SENSORS], bool levels[NUM_SENSORS]) {
-    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
-        if (gpioRead(sensors[i]) == DRY) {
-            levels[i] = DRY;
-            printf("SENSOR %d IS DRY\n", sensors[i]);
-        } else {
-            levels[i] = WET;
-        }
-    }
-}
-
-void checkLevels(bool levels[NUM_SENSORS], int server) {
-    bool allDry = true;
-    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
-        if (levels[i] == WET) {
-            allDry = false;
-            break;
-        }
-    }
-    if (allDry) {
-        printf("all dry\n");
-        pingServer(server);
-    }
-}*/
 
 int connectToServer() {
     int sockfd;
@@ -85,10 +51,7 @@ int connectToServer() {
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr("209.97.232.75");
     servaddr.sin_port = htons(PORT);
-
-    printf("Server Address Setup Done\n");
-
-    printf("connecting to server\n");
+    printf("%d\n", ntohs(servaddr.sin_port));
    
     ASSERT(connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == 0, "failed to connect to server\n");
     printf("connected to the server..\n");

@@ -7,7 +7,7 @@ SERVERHFILES := $(wildcard ServerFolder/*.h)
 all: pi server
 
 pi: $(PIFILES) $(PIHFILES) 
-		gcc -Wall -lpthread -lpigpio -Ofast -o pi $(PIFILES)
+		gcc -lpthread -lpigpio -o pi $(PIFILES)
 
 server: $(SERVERFILES) $(SERVERHFILES)
 		gcc -Wall -Ofast -o server $(SERVERFILES)
