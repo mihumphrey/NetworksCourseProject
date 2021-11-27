@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
             }, new TcpClient.OnConnected() {
                 @Override
                 public void connected() {
-                    ((TextView)getFragmentManager().findFragmentById(R.id.FirstFragment).getView().findViewById(R.id.connection_status)).setText(R.string.connected);
+                    //((TextView)getFragmentManager().findFragmentById(R.id.FirstFragment).getView().findViewById(R.id.connection_status)).setText(R.string.connected);
                 }
             });
             mTcpClient.run();
