@@ -14,6 +14,8 @@
 #define SEC_TO_US(sec) ((sec)*1000000)
 #define NS_TO_US(ns)    ((ns)/1000)
 
+#define PORT 8888
+
 
 uint64_t expected = 0;
 uint16_t numLost = 0;
@@ -36,9 +38,13 @@ typedef struct __Packet__ {
 } Packet;
 
 int main(int argc , char *argv[]) {
+	Packet *pp = malloc(sizeof(Packet));
+	printf("%d\n", sizeof(Packet));
+	printf("%d\n", sizeof(pp->message));
+	printf("%d\n", sizeof(pp->time));
+	printf("%d\n", sizeof(pp->seqnum));
 	int socket_desc , client_sock , c , read_size;
 	struct sockaddr_in server , client;
-	char buff[sizeof(Packet)];
 	
 	printf("Creating Socket\n");
 	//Create socket
@@ -50,7 +56,7 @@ int main(int argc , char *argv[]) {
 	//Prepare the sockaddr_in structure
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
-	server.sin_port = htons( 8888 );
+	server.sin_port = htons(PORT);
 	printf("Socket Prep Done\n");
 
 	printf("Binding\n");	
@@ -67,9 +73,34 @@ int main(int argc , char *argv[]) {
 	
 	//accept connection from an incoming client
 	client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
-	ASSERT(client_sock >= 0, "failed to accept connection")	
+	ASSERT(client_sock >= 0, "failed to accept connection")
+	Packet *p = malloc(sizeof(Packet));
+	memcpy(p->message, "PLANT NEEDS WATERING", MESSAGE_LEN);
+	p->seqnum = 240;
+	p->time = 25;
+	
+	char buff[sizeof(Packet)];
+	printf("Writing to device\n");	
+
+	memcpy(buff, p->message, MESSAGE_LEN);
+    memcpy(buff + MESSAGE_LEN, &p->time, sizeof(uint64_t));
+    memcpy(buff + MESSAGE_LEN + sizeof(uint64_t), &p->seqnum, sizeof(uint64_t));
+	write(client_sock, buff, sizeof(buff));
+
+
+	bzero(buff, sizeof(buff));
+	memcpy(p->message, "PLANT NEEDS WATERING", MESSAGE_LEN);
+	p->seqnum = 6969;
+	p->time = 420;
+
+	memcpy(buff, p->message, MESSAGE_LEN);
+    memcpy(buff + MESSAGE_LEN, &p->time, sizeof(uint64_t));
+    memcpy(buff + MESSAGE_LEN + sizeof(uint64_t), &p->seqnum, sizeof(uint64_t));
+	write(client_sock, buff, sizeof(buff));
+	
+	printf("Wrote to device\n");	
 	//Receive a message from client
-	while ((read_size = read(client_sock , buff , sizeof(Packet))) > 0 ){
+	while ((read_size = read(client_sock , buff , sizeof(Packet))) > 0 ) {
 		//Send the message back to client
 		Packet *p = malloc(sizeof(Packet));
 		memcpy(p->message, buff, MESSAGE_LEN);
@@ -86,7 +117,7 @@ int main(int argc , char *argv[]) {
 		printf("\tNO PACKET LOSS ON PACKET: %ld\n", p->seqnum);
 
 		uint64_t newLatency = (us - p->time);
-		printf("\tLATENCY: %ld\n\n", newLatency);
+		printf("\tLATENCY: %lu\n\n", newLatency);
 
 		latency = getAverageLatency(latency, expected, newLatency);
 		expected++;
@@ -103,8 +134,6 @@ int main(int argc , char *argv[]) {
 	
 	return 0;
 }
-<<<<<<< HEAD
-=======
 
 uint64_t getAverageLatency(uint64_t current, uint64_t numPackets, uint64_t new) {
 	current *= numPackets;
@@ -113,4 +142,31 @@ uint64_t getAverageLatency(uint64_t current, uint64_t numPackets, uint64_t new) 
 
 	return current;
 }
->>>>>>> ca6ea1d9bcbf51394aac7ae195ff071c5a36a57c
+
+// Byte arr[40];
+// Byte message[21];
+// Byte seq[8];
+// Byte time[8];
+// int j = 0;
+// for (int i = 0; i < 21; i++) {
+// 		message[i] = arr[i];
+// }
+// for (int i = 21; i < 29; i++) {
+// 		time[i] = arr[i];
+// }
+// for (int i = 30; i < 37; i++) {
+// 		seq[i] = arr[i];
+// }
+
+
+// String s = String(message);
+
+// long timenum = 0;
+// for (int i = 0; i < time.length; i++) {
+//    timenum += ((long) time[i] & 0xffL) << (8 * i);
+// }
+
+// long seqnum = 0;
+// for (int i = 0; i < seq.length; i++) {
+//    seqnum += ((long) seq[i] & 0xffL) << (8 * i);
+// }
