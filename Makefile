@@ -10,7 +10,7 @@ pi: $(PIFILES) $(PIHFILES)
 		gcc -lpthread -lpigpio -o pi $(PIFILES)
 
 server: $(SERVERFILES) $(SERVERHFILES)
-		gcc -Wall -Ofast -o server $(SERVERFILES)
+		gcc -Wall -Ofast -o server $(SERVERFILES) -lpthread
 
 zip: 
 		make clean >/dev/null

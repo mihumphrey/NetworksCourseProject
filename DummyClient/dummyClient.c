@@ -14,6 +14,15 @@
 
 #define PORT 8888
 
+#define MESSAGE_LEN 21
+
+
+typedef struct __Packet__ {
+    char message[MESSAGE_LEN];
+    uint64_t time;
+    uint64_t seqnum; 
+} Packet;
+
 #define ASSERT(arg, err) \
 			if (!(arg)) {\
 				fprintf(stderr,"\033[31mError, %s: \n\t", err);\
@@ -30,9 +39,29 @@ void pingServer(int server);
 
 int main() {
     int server = connectToServer();
+    write(server, "1", 1);
+    
+    bool yes = 1;
+    Packet *p;
+    sleep(1);
     while (1) {
-        pingServer(server);
-        sleep(1);
+        if (!yes)
+            pingServer(server);
+        if (yes) {
+            char buff[sizeof(Packet)];
+            read(server, buff, sizeof(buff));
+            p = malloc(sizeof(Packet));
+            memcpy(p->message, buff, MESSAGE_LEN);
+            memcpy(&p->time, buff + MESSAGE_LEN, sizeof(uint64_t));
+            memcpy(&p->seqnum, buff + MESSAGE_LEN + sizeof(uint64_t), sizeof(uint64_t));
+        }
+        if (yes) {
+            printf("Received packet from server: \n");
+            printf("\tMESSAGE: %s\n", p->message);
+            printf("\tTIME: %lu\n", p->time);
+            printf("\tMESSAGE: %lu\n", p->seqnum);
+        }
+        sleep(10);
     }
     return 0;
 }
@@ -49,7 +78,7 @@ int connectToServer() {
    	printf("Server Address Setup\n"); 
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr("209.97.232.75");
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     servaddr.sin_port = htons(PORT);
     printf("%d\n", ntohs(servaddr.sin_port));
    
@@ -60,8 +89,16 @@ int connectToServer() {
 }
 
 void pingServer(int server) {
-    char buff[64];
-    strcpy(buff, "Ya Bitch\n");
+    Packet *p = malloc(sizeof(Packet));
+	memcpy(p->message, "PLANT NEEDS WATERING", MESSAGE_LEN);
+	p->seqnum = 240;
+	p->time = 25;
+	char buff[sizeof(Packet)];
+	printf("Writing to device\n");	
+	memcpy(buff, p->message, MESSAGE_LEN);
+    memcpy(buff + MESSAGE_LEN, &p->time, sizeof(uint64_t));
+    memcpy(buff + MESSAGE_LEN + sizeof(uint64_t), &p->seqnum, sizeof(uint64_t));
     write(server, buff, sizeof(buff));
-    printf("WROTE: %s TO CLIENT\n", buff);
+    printf("Wrote to device\n");
+    //printf("WROTE: %s TO CLIENT\n", buff);
 }
