@@ -4,11 +4,14 @@ import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class TcpClient {
     // The TAG is just for Log usage. If you run the app through AS you can go to the bottom of AS
@@ -17,7 +20,7 @@ public class TcpClient {
     // you can search for "KBK" and see the message when it shows up. (Yes KBK is one of my coworkers
     // initials and he had me use it for one thing and now I just use it for everything)
     public static final String TAG = "KBK";
-    public static final String SERVER_IP = "209.97.232.75";
+    public static final String SERVER_IP = "138.67.190.221";
     public static final int SERVER_PORT = 8888;
     // message to send to the server
     private String mServerMessage;
@@ -104,28 +107,60 @@ public class TcpClient {
             // Log line to say that we have created the socket and thus connected to the server.
             Log.d(TAG, "Socket created");
 
+            if (socket.isConnected()){
+                Log.d(TAG, "Connected");
+            } else {
+                Log.d(TAG, "Not Connected");
+            }
+
             // Callback to the main thread so that the connection status text in the app changes to
             // connected.
-            mConnectedListener.connected();
+            // mConnectedListener.connected();
 
             try {
+
+                Log.d(TAG, "Create Message Buffers");
 
                 //sends the message to the server
                 mBufferOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
 
                 //receives the message which the server sends back
                 mBufferIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                InputStream stream = socket.getInputStream();
 
                 // Listen for messages from the server while the client is active
                 while (mRun) {
+                    byte[] data = new byte[40];
+                    Log.d(TAG, "Listening For Message");
 
-                    mServerMessage = mBufferIn.readLine();
+                    //mServerMessage = mBufferIn.readLine();
+                    stream.read(data);
+
+                    byte[] bmessage = Arrays.copyOfRange(data, 0, 20);
+                    byte[] btime = Arrays.copyOfRange(data, 21, 28);
+                    byte[] bseqnum = Arrays.copyOfRange(data, 29, 36);
+
+                    String message = new String(bmessage);
+
+                    long time = 0;
+                    for (int i = 0; i < btime.length; i++) {
+                        time += ((long) btime[i] & 0xffL) << (8 * i);
+                    }
+
+                    long seqnum = 0;
+                    for (int i = 0; i < bseqnum.length; i++) {
+                        seqnum += ((long) bseqnum[i] & 0xffL) << (8 * i);
+                    }
 
                     // If there is a message, use the callback to send the message back to the main
                     // thread so that it can be handled
-                    if (mServerMessage != null && mMessageListener != null) {
-                        mMessageListener.messageReceived(mServerMessage);
+                    if (data != null && mMessageListener != null) {
+                        mMessageListener.messageReceived(message);
+                        mMessageListener.messageReceived(String.valueOf(seqnum));
+                        mMessageListener.messageReceived(String.valueOf(time));
                     }
+
+                    Thread.sleep(2000);
                 }
 
             } catch (Exception e) {
