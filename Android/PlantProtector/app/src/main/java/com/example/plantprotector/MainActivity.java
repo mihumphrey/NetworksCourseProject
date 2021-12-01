@@ -4,9 +4,6 @@ import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,15 +13,59 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.plantprotector.databinding.ActivityMainBinding;
-import com.google.android.material.snackbar.Snackbar;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "KBK";
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-    TcpClient mTcpClient;
+    TcpClient tcpClient;
 
+    private boolean run;
+    private boolean connected;
+
+    private long plant1PreviousSeqNum = 0;
+    private long plant1PacketLoss = 0;
+    private long plant1Latency = -1;
+    private String plant1Message;
+    private long plant2Latency = -1;
+    private String plant2Message;
+    private long plant2PreviousSeqNum = 0;
+    private long plant2PacketLoss = 0;
+
+    public class ProgressUpdateWrapper {
+        public String message;
+        public long time;
+        public long seqNum;
+        public long plantNum;
+
+        public ProgressUpdateWrapper(String message, long time, long seqNum, long plantNum) {
+            this.message = message;
+            this.time = time;
+            this.seqNum = seqNum;
+            this.plantNum = plantNum;
+        }
+    }
+
+    public class PlantInfo {
+        public String message;
+        public long latency;
+        public long packetLoss;
+
+        public PlantInfo(String message, long latency, long packetLoss) {
+            this.message = message;
+            this.latency = latency;
+            this.packetLoss = packetLoss;
+        }
+    }
+
+    public boolean isRunning() {
+        return run;
+    }
+
+    public boolean isConnected() {
+        return connected;
+    }
 
     // ConnectTask starts up the TCP Client and connects it to the server. The IP address and port
     // used can be found in the TcpClient.java class. It also houses the message received method that
@@ -33,30 +74,81 @@ public class MainActivity extends AppCompatActivity {
     // status. ConnectTask creates an asynchronous task that works in the background, not on the main
     // UI thread, this needs to stay this way.
     @SuppressLint("StaticFieldLeak")
-    public class ConnectTask extends AsyncTask<String, String, TcpClient> {
+    public class ConnectTask extends AsyncTask<String, ProgressUpdateWrapper, TcpClient> {
         @Override
         protected TcpClient doInBackground(String... message) {
-            mTcpClient = new TcpClient(new TcpClient.OnMessageReceived() {
+            tcpClient = new TcpClient(new TcpClient.OnMessageReceived() {
                 @Override
-                public void messageReceived(String message) {
-                    publishProgress(message);
+                public void messageReceived(String message, long time, long seqNum, long plantNum) {
+                    publishProgress(new ProgressUpdateWrapper(message, time, seqNum, plantNum));
                 }
             }, new TcpClient.OnConnected() {
                 @Override
                 public void connected() {
-                    //((TextView)getFragmentManager().findFragmentById(R.id.FirstFragment).getView().findViewById(R.id.connection_status)).setText(R.string.connected);
+                    connected = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (getSupportFragmentManager().findFragmentById(R.id.FirstFragment) != null && getSupportFragmentManager().findFragmentById(R.id.FirstFragment).getView() != null){
+                                ((FirstFragment)getSupportFragmentManager().findFragmentById(R.id.FirstFragment)).updateInfo();
+                            }
+                        }
+                    });
                 }
             });
-            mTcpClient.run();
+            tcpClient.run();
 
             return null;
         }
 
         @Override
-        protected void onProgressUpdate(String... values) {
+        protected void onProgressUpdate(ProgressUpdateWrapper... values) {
             super.onProgressUpdate(values);
-            Log.d(TAG, "Server Message: " + values[0]);
-            //process server response here....
+
+            ProgressUpdateWrapper progressUpdate = values[0];
+            Log.d(TAG, "Server Message --------> " + "\n\tMessage: " + progressUpdate.message + "\n\tTime: " + progressUpdate.time + "\n\tSequence Number: " + progressUpdate.seqNum + "\n\tPlant Number: " + progressUpdate.plantNum);
+            switch ((int) progressUpdate.plantNum) {
+                case 1:
+                    plant1PacketLoss += progressUpdate.seqNum - plant1PreviousSeqNum - 1;
+                    plant1PreviousSeqNum = progressUpdate.seqNum;
+                    plant1Message = progressUpdate.message;
+                    plant1Latency = progressUpdate.time - System.currentTimeMillis();
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (getSupportFragmentManager().findFragmentById(R.id.SecondFragment) != null){
+                                ((SecondFragment)getSupportFragmentManager().findFragmentById(R.id.SecondFragment)).updateInfo(getPlantInfo(1));
+                            }
+                        }
+                    });
+                case 2:
+                    plant2PacketLoss += progressUpdate.seqNum - plant2PreviousSeqNum - 1;
+                    plant2PreviousSeqNum = progressUpdate.seqNum;
+                    plant2Message = progressUpdate.message;
+                    plant2Latency = progressUpdate.time - System.currentTimeMillis();
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (getSupportFragmentManager().findFragmentById(R.id.ThirdFragment) != null){
+                                ((ThirdFragment)getSupportFragmentManager().findFragmentById(R.id.ThirdFragment)).updateInfo(getPlantInfo(2));
+                            }
+                        }
+                    });
+                default:
+            }
+        }
+    }
+
+    public PlantInfo getPlantInfo(int plant) {
+        switch(plant) {
+            case 1:
+                return new PlantInfo(plant1Message, plant1Latency, plant1PacketLoss);
+            case 2:
+                return new PlantInfo(plant2Message, plant2Latency, plant2PacketLoss);
+            default:
+                return new PlantInfo(null, -1, -1);
         }
     }
 
@@ -66,13 +158,25 @@ public class MainActivity extends AppCompatActivity {
     // bound to (in this case MainActivity) which allows us to not make this static, and it needs to
     // stay that way.
     public void startClient(){
+        run = true;
         new ConnectTask().execute();
     }
 
     // Similar to startClient(), stops the client and is called from the FirstFragment.java class.
     public void stopClient(){
-        if (mTcpClient != null) {
-            mTcpClient.stopClient();
+        if (tcpClient != null) {
+            tcpClient.stopClient();
+        }
+
+        run = false;
+
+        if (getSupportFragmentManager().findFragmentById(R.id.SecondFragment) != null && getSupportFragmentManager().findFragmentById(R.id.SecondFragment).getView() != null){
+
+        }
+        if (getSupportFragmentManager().findFragmentById(R.id.ThirdFragment) != null && getSupportFragmentManager().findFragmentById(R.id.ThirdFragment).getView() != null){
+            ((TextView)getSupportFragmentManager().findFragmentById(R.id.ThirdFragment).getView().findViewById(R.id.plant_2_status)).setText(R.string.connect_for_info);
+            ((TextView)getSupportFragmentManager().findFragmentById(R.id.ThirdFragment).getView().findViewById(R.id.plant_2_latency)).setText(R.string.connect_for_info);
+            ((TextView)getSupportFragmentManager().findFragmentById(R.id.ThirdFragment).getView().findViewById(R.id.plant_2_packet_loss)).setText(R.string.connect_for_info);
         }
     }
 
@@ -94,36 +198,6 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-
-        binding.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override

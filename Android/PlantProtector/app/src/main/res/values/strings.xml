@@ -6,9 +6,12 @@
     <string name="connected">Connected</string>
     <string name="connect">Connect</string>
     <string name="disconnect">Disconnect</string>
+    <string name="connect_for_info">Connect For Information</string>
+    <string name="updating">Updating</string>
     <!-- Strings used for fragments for navigation -->
-    <string name="first_fragment_label">First Fragment</string>
-    <string name="second_fragment_label">Second Fragment</string>
+    <string name="first_fragment_label">Home</string>
+    <string name="second_fragment_label">Plant 1</string>
+    <string name="third_fragment_label">Plant 2</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 

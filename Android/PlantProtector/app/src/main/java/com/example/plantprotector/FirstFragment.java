@@ -23,13 +23,11 @@ public class FirstFragment extends Fragment {
             LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState
     ) {
-
         binding = FragmentFirstBinding.inflate(inflater, container, false);
         return binding.getRoot();
-
     }
 
-    // Once the view is created do some settup
+    // Once the view is created do some setup
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
@@ -58,6 +56,31 @@ public class FirstFragment extends Fragment {
                 }
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateInfo();
+    }
+
+    public void updateInfo() {
+        if (((MainActivity)getActivity()).isRunning()) {
+            if (((MainActivity)getActivity()).isConnected()) {
+                ((TextView)getView().findViewById(R.id.connection_status)).setText(R.string.connected);
+            } else {
+                ((TextView)getView().findViewById(R.id.connection_status)).setText(R.string.connecting);
+            }
+            ((Button)getView().findViewById(R.id.connection_button)).setText(R.string.disconnect);
+        } else {
+            ((TextView)getView().findViewById(R.id.connection_status)).setText(R.string.not_connected);
+            ((Button)getView().findViewById(R.id.connection_button)).setText(R.string.connect);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
     }
 
     // Called when the view is left

@@ -1,5 +1,6 @@
 package com.example.plantprotector;
 
+import android.renderscript.ScriptGroup;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -10,7 +11,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class TcpClient {
@@ -22,24 +22,22 @@ public class TcpClient {
     public static final String TAG = "KBK";
     public static final String SERVER_IP = "138.67.190.221";
     public static final int SERVER_PORT = 8888;
-    // message to send to the server
-    private String mServerMessage;
     // sends message received notifications
-    private OnMessageReceived mMessageListener = null;
-    private OnConnected mConnectedListener = null;
+    private OnMessageReceived messageListener;
+    private OnConnected connectedListener;
     // while this is true, the server will continue running
-    private boolean mRun = false;
+    private boolean run = false;
     // used to send messages
-    private PrintWriter mBufferOut;
+    private PrintWriter bufferOut;
     // used to read messages from the server
-    private BufferedReader mBufferIn;
+    private InputStream stream;
 
     /**
      * Constructor of the class. OnMessagedReceived listens for the messages received from server
      */
     public TcpClient(OnMessageReceived listener, OnConnected connectedListener) {
-        mMessageListener = listener;
-        mConnectedListener = connectedListener;
+        messageListener = listener;
+        this.connectedListener = connectedListener;
     }
 
     /**
@@ -51,10 +49,10 @@ public class TcpClient {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                if (mBufferOut != null) {
+                if (bufferOut != null) {
                     Log.d(TAG, "Sending: " + message);
-                    mBufferOut.println(message);
-                    mBufferOut.flush();
+                    bufferOut.println(message);
+                    bufferOut.flush();
                 }
             }
         };
@@ -67,23 +65,23 @@ public class TcpClient {
      */
     public void stopClient() {
 
-        mRun = false;
+        run = false;
 
-        if (mBufferOut != null) {
-            mBufferOut.flush();
-            mBufferOut.close();
+        if (bufferOut != null) {
+            bufferOut.flush();
+            bufferOut.close();
         }
 
-        mMessageListener = null;
-        mBufferIn = null;
-        mBufferOut = null;
-        mServerMessage = null;
+        messageListener = null;
+        connectedListener = null;
+        bufferOut = null;
+        stream = null;
     }
 
     // This is what gets called when we start up the client. It houses most of the needed stuff
     public void run() {
 
-        mRun = true;
+        run = true;
 
         try {
             // serverAddr is just the IP address, SERVER_IP is instantiated above on class creation
@@ -115,49 +113,56 @@ public class TcpClient {
 
             // Callback to the main thread so that the connection status text in the app changes to
             // connected.
-            // mConnectedListener.connected();
+            connectedListener.connected();
 
             try {
 
                 Log.d(TAG, "Create Message Buffers");
 
                 //sends the message to the server
-                mBufferOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+                bufferOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
 
                 //receives the message which the server sends back
-                mBufferIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                InputStream stream = socket.getInputStream();
+                stream = socket.getInputStream();
+
+                sendMessage("1");
 
                 // Listen for messages from the server while the client is active
-                while (mRun) {
-                    byte[] data = new byte[40];
+                while (run) {
+                    byte[] data = new byte[44];
                     Log.d(TAG, "Listening For Message");
 
-                    //mServerMessage = mBufferIn.readLine();
-                    stream.read(data);
-
-                    byte[] bmessage = Arrays.copyOfRange(data, 0, 20);
-                    byte[] btime = Arrays.copyOfRange(data, 21, 28);
-                    byte[] bseqnum = Arrays.copyOfRange(data, 29, 36);
-
-                    String message = new String(bmessage);
-
-                    long time = 0;
-                    for (int i = 0; i < btime.length; i++) {
-                        time += ((long) btime[i] & 0xffL) << (8 * i);
+                    //serverMessage = mBufferIn.readLine();
+                    if (stream.read(data) <=0) {
+                        continue;
                     }
 
-                    long seqnum = 0;
-                    for (int i = 0; i < bseqnum.length; i++) {
-                        seqnum += ((long) bseqnum[i] & 0xffL) << (8 * i);
+                    byte[] bMessage = Arrays.copyOfRange(data, 0, 20);
+                    byte[] bTime = Arrays.copyOfRange(data, 21, 28);
+                    byte[] bSeqNum = Arrays.copyOfRange(data, 29, 36);
+                    byte[] bPlantNum = Arrays.copyOfRange(data, 37, 44);
+
+                    String message = new String(bMessage);
+
+                    long time = 0;
+                    for (int i = 0; i < bTime.length; i++) {
+                        time += ((long) bTime[i] & 0xffL) << (8 * i);
+                    }
+
+                    long seqNum = 0;
+                    for (int i = 0; i < bSeqNum.length; i++) {
+                        seqNum += ((long) bSeqNum[i] & 0xffL) << (8 * i);
+                    }
+
+                    long plantNum = 0;
+                    for (int i = 0; i < bPlantNum.length; i++) {
+                        plantNum += ((long) bPlantNum[i] & 0xffL) << (8 * i);
                     }
 
                     // If there is a message, use the callback to send the message back to the main
                     // thread so that it can be handled
-                    if (data != null && mMessageListener != null) {
-                        mMessageListener.messageReceived(message);
-                        mMessageListener.messageReceived(String.valueOf(seqnum));
-                        mMessageListener.messageReceived(String.valueOf(time));
+                    if (messageListener != null) {
+                        messageListener.messageReceived(message, time, seqNum, plantNum);
                     }
 
                     Thread.sleep(2000);
@@ -180,7 +185,7 @@ public class TcpClient {
     //Declare the interface. The method messageReceived(String message) will must be implemented in the Activity
     //class at on AsyncTask doInBackground
     public interface OnMessageReceived {
-        public void messageReceived(String message);
+        public void messageReceived(String message, long time, long seqNum, long plantNum);
     }
 
     public interface OnConnected {

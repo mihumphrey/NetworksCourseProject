@@ -4,13 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SecondFragment">
+    tools:context=".ThirdFragment">
 
     <Button
-        android:id="@+id/button_next"
+        android:id="@+id/button_previous"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/next"
+        android:text="@string/previous"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
@@ -34,14 +34,14 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/button_next" />
+        app:layout_constraintTop_toBottomOf="@+id/button_previous" />
 
     <TextView
         android:id="@+id/textView6"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Plant Status"
-        app:layout_constraintBottom_toTopOf="@+id/button_next"
+        app:layout_constraintBottom_toTopOf="@+id/button_previous"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.255"
         app:layout_constraintStart_toStartOf="parent"
@@ -49,11 +49,11 @@
         app:layout_constraintVertical_bias="0.225" />
 
     <TextView
-        android:id="@+id/plant_1_status"
+        android:id="@+id/plant_2_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/connect_for_info"
-        app:layout_constraintBottom_toTopOf="@+id/button_next"
+        app:layout_constraintBottom_toTopOf="@+id/button_previous"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.458"
         app:layout_constraintStart_toEndOf="@+id/textView6"
@@ -65,7 +65,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Latency"
-        app:layout_constraintBottom_toTopOf="@+id/button_next"
+        app:layout_constraintBottom_toTopOf="@+id/button_previous"
         app:layout_constraintEnd_toEndOf="@+id/textView6"
         app:layout_constraintHorizontal_bias="0.294"
         app:layout_constraintStart_toStartOf="@+id/textView6"
@@ -77,32 +77,33 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Packet Loss"
-        app:layout_constraintBottom_toTopOf="@+id/button_next"
+        app:layout_constraintBottom_toTopOf="@+id/button_previous"
         app:layout_constraintEnd_toEndOf="@+id/textView8"
         app:layout_constraintHorizontal_bias="0.291"
         app:layout_constraintStart_toStartOf="@+id/textView8"
         app:layout_constraintTop_toBottomOf="@+id/textView8" />
 
     <TextView
-        android:id="@+id/plant_1_latency"
+        android:id="@+id/plant_2_latency"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/connect_for_info"
-        app:layout_constraintBottom_toTopOf="@+id/button_next"
+        app:layout_constraintBottom_toTopOf="@+id/button_previous"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/plant_1_status"
-        app:layout_constraintTop_toBottomOf="@+id/plant_1_status"
+        app:layout_constraintStart_toStartOf="@+id/plant_2_status"
+        app:layout_constraintTop_toBottomOf="@+id/plant_2_status"
         app:layout_constraintVertical_bias="0.304" />
 
     <TextView
-        android:id="@+id/plant_1_packet_loss"
+        android:id="@+id/plant_2_packet_loss"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/connect_for_info"
-        app:layout_constraintBottom_toTopOf="@+id/button_next"
+        app:layout_constraintBottom_toTopOf="@+id/button_previous"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/plant_1_latency"
-        app:layout_constraintTop_toBottomOf="@+id/plant_1_latency" />
+        app:layout_constraintStart_toStartOf="@+id/plant_2_latency"
+        app:layout_constraintTop_toBottomOf="@+id/plant_2_latency" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
