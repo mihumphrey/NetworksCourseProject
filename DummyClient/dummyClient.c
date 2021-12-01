@@ -39,9 +39,9 @@ void pingServer(int server);
 
 int main() {
     int server = connectToServer();
-    write(server, "1", 1);
+    write(server, "0", 1);
     
-    bool yes = 1;
+    bool yes = 0;
     Packet *p;
     sleep(1);
     while (1) {

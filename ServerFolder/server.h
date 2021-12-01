@@ -35,6 +35,7 @@ typedef struct __Packet__ {
     char message[MESSAGE_LEN];
     uint64_t time;
     uint64_t seqnum; 
+	uint64_t plantnum;
 } Packet;
 Android *head;
 
