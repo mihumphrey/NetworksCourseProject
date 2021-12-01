@@ -36,14 +36,14 @@ public class MainActivity extends AppCompatActivity {
     public class ProgressUpdateWrapper {
         public String message;
         public long time;
-        public long seqnum;
-        public long plantnum;
+        public long seqNum;
+        public long plantNum;
 
-        public ProgressUpdateWrapper(String message, long time, long seqnum, long plantnum) {
+        public ProgressUpdateWrapper(String message, long time, long seqNum, long plantNum) {
             this.message = message;
             this.time = time;
-            this.seqnum = seqnum;
-            this.plantnum = plantnum;
+            this.seqNum = seqNum;
+            this.plantNum = plantNum;
         }
     }
 
@@ -79,8 +79,8 @@ public class MainActivity extends AppCompatActivity {
         protected TcpClient doInBackground(String... message) {
             tcpClient = new TcpClient(new TcpClient.OnMessageReceived() {
                 @Override
-                public void messageReceived(String message, long time, long seqnum, long plantnum) {
-                    publishProgress(new ProgressUpdateWrapper(message, time, seqnum, plantnum));
+                public void messageReceived(String message, long time, long seqNum, long plantNum) {
+                    publishProgress(new ProgressUpdateWrapper(message, time, seqNum, plantNum));
                 }
             }, new TcpClient.OnConnected() {
                 @Override
@@ -106,12 +106,13 @@ public class MainActivity extends AppCompatActivity {
             super.onProgressUpdate(values);
 
             ProgressUpdateWrapper progressUpdate = values[0];
-            Log.d(TAG, "Server Message --------> " + "\n\tMessage: " + progressUpdate.message + "\n\tTime: " + progressUpdate.time + "\n\tSequence Number: " + progressUpdate.seqnum + "\n\tPlant Number: " + progressUpdate.plantnum);
-            switch ((int) progressUpdate.plantnum) {
+            Log.d(TAG, "Server Message --------> " + "\n\tMessage: " + progressUpdate.message + "\n\tTime: " + progressUpdate.time + "\n\tSequence Number: " + progressUpdate.seqNum + "\n\tPlant Number: " + progressUpdate.plantNum);
+            switch ((int) progressUpdate.plantNum) {
                 case 1:
-                    plant1PacketLoss += progressUpdate.seqnum - plant1PreviousSeqNum - 1;
-                    plant1PreviousSeqNum = progressUpdate.seqnum;
+                    plant1PacketLoss += progressUpdate.seqNum - plant1PreviousSeqNum - 1;
+                    plant1PreviousSeqNum = progressUpdate.seqNum;
                     plant1Message = progressUpdate.message;
+                    plant1Latency = progressUpdate.time - System.currentTimeMillis();
 
                     runOnUiThread(new Runnable() {
                         @Override
@@ -122,9 +123,10 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                 case 2:
-                    plant2PacketLoss += progressUpdate.seqnum - plant2PreviousSeqNum - 1;
-                    plant2PreviousSeqNum = progressUpdate.seqnum;
+                    plant2PacketLoss += progressUpdate.seqNum - plant2PreviousSeqNum - 1;
+                    plant2PreviousSeqNum = progressUpdate.seqNum;
                     plant2Message = progressUpdate.message;
+                    plant2Latency = progressUpdate.time - System.currentTimeMillis();
 
                     runOnUiThread(new Runnable() {
                         @Override

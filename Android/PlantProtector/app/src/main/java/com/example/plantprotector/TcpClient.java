@@ -137,32 +137,32 @@ public class TcpClient {
                         continue;
                     }
 
-                    byte[] bmessage = Arrays.copyOfRange(data, 0, 20);
-                    byte[] btime = Arrays.copyOfRange(data, 21, 28);
-                    byte[] bseqnum = Arrays.copyOfRange(data, 29, 36);
-                    byte[] bplantnum = Arrays.copyOfRange(data, 37, 44);
+                    byte[] bMessage = Arrays.copyOfRange(data, 0, 20);
+                    byte[] bTime = Arrays.copyOfRange(data, 21, 28);
+                    byte[] bSeqNum = Arrays.copyOfRange(data, 29, 36);
+                    byte[] bPlantNum = Arrays.copyOfRange(data, 37, 44);
 
-                    String message = new String(bmessage);
+                    String message = new String(bMessage);
 
                     long time = 0;
-                    for (int i = 0; i < btime.length; i++) {
-                        time += ((long) btime[i] & 0xffL) << (8 * i);
+                    for (int i = 0; i < bTime.length; i++) {
+                        time += ((long) bTime[i] & 0xffL) << (8 * i);
                     }
 
-                    long seqnum = 0;
-                    for (int i = 0; i < bseqnum.length; i++) {
-                        seqnum += ((long) bseqnum[i] & 0xffL) << (8 * i);
+                    long seqNum = 0;
+                    for (int i = 0; i < bSeqNum.length; i++) {
+                        seqNum += ((long) bSeqNum[i] & 0xffL) << (8 * i);
                     }
 
-                    long plantnum = 0;
-                    for (int i = 0; i < bplantnum.length; i++) {
-                        plantnum += ((long) bplantnum[i] & 0xffL) << (8 * i);
+                    long plantNum = 0;
+                    for (int i = 0; i < bPlantNum.length; i++) {
+                        plantNum += ((long) bPlantNum[i] & 0xffL) << (8 * i);
                     }
 
                     // If there is a message, use the callback to send the message back to the main
                     // thread so that it can be handled
                     if (messageListener != null) {
-                        messageListener.messageReceived(message, time, seqnum, plantnum);
+                        messageListener.messageReceived(message, time, seqNum, plantNum);
                     }
 
                     Thread.sleep(2000);
@@ -185,7 +185,7 @@ public class TcpClient {
     //Declare the interface. The method messageReceived(String message) will must be implemented in the Activity
     //class at on AsyncTask doInBackground
     public interface OnMessageReceived {
-        public void messageReceived(String message, long time, long seqnum, long plantnum);
+        public void messageReceived(String message, long time, long seqNum, long plantNum);
     }
 
     public interface OnConnected {
