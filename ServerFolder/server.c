@@ -19,7 +19,7 @@ void broadcast(Android *head, Packet *p) {
 	memcpy(buff, p->message, MESSAGE_LEN);
     memcpy(buff + MESSAGE_LEN, &p->time, sizeof(uint64_t));
     memcpy(buff + MESSAGE_LEN + sizeof(uint64_t), &p->seqnum, sizeof(uint64_t));
-
+	memcpy(buff + MESSAGE_LEN + sizeof(uint64_t) + sizeof(uint64_t), &p->plantnum, sizeof(uint64_t));
 	while (head != NULL) { 
 		DEBUG("IN BROADCAST LOOP\n");
 		sleep(1);
@@ -63,6 +63,7 @@ void *handlePi(void *args) {
 		memcpy(p->message, buff, MESSAGE_LEN);
 		memcpy(&p->time, buff + MESSAGE_LEN, sizeof(uint64_t));
 		memcpy(&p->seqnum, buff + MESSAGE_LEN + sizeof(uint64_t), sizeof(uint64_t));
+		memcpy(buff + MESSAGE_LEN + sizeof(uint64_t) + sizeof(uint64_t), &p->plantnum, sizeof(uint64_t));
 		broadcast(head, p);
 		DEBUG("FROM CLIENT: %s\n", p->message);
 		free(p);
