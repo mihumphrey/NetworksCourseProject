@@ -1,6 +1,8 @@
 package com.example.plantprotector;
 
 import android.annotation.SuppressLint;
+import android.app.Fragment;
+import android.app.FragmentManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -24,14 +26,12 @@ public class MainActivity extends AppCompatActivity {
     private boolean run;
     private boolean connected;
 
-    private long plant1PreviousSeqNum = 0;
-    private long plant1PacketLoss = 0;
+    private long packetLoss = 0;
     private long plant1Latency = -1;
-    private String plant1Message;
+    private String plant1Message = null;
     private long plant2Latency = -1;
-    private String plant2Message;
-    private long plant2PreviousSeqNum = 0;
-    private long plant2PacketLoss = 0;
+    private String plant2Message = null;
+    private long previousSeqNum = 0;
 
     public class ProgressUpdateWrapper {
         public String message;
@@ -49,13 +49,13 @@ public class MainActivity extends AppCompatActivity {
 
     public class PlantInfo {
         public String message;
-        public long latency;
-        public long packetLoss;
+        public String latency;
+        public String packetLoss;
 
         public PlantInfo(String message, long latency, long packetLoss) {
             this.message = message;
-            this.latency = latency;
-            this.packetLoss = packetLoss;
+            this.latency = String.valueOf(latency) + " ms";
+            this.packetLoss = String.valueOf(packetLoss);
         }
     }
 
@@ -85,15 +85,8 @@ public class MainActivity extends AppCompatActivity {
             }, new TcpClient.OnConnected() {
                 @Override
                 public void connected() {
+                    Log.d(TAG, "Main Activity Connected");
                     connected = true;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (getSupportFragmentManager().findFragmentById(R.id.FirstFragment) != null && getSupportFragmentManager().findFragmentById(R.id.FirstFragment).getView() != null){
-                                ((FirstFragment)getSupportFragmentManager().findFragmentById(R.id.FirstFragment)).updateInfo();
-                            }
-                        }
-                    });
                 }
             });
             tcpClient.run();
@@ -108,35 +101,27 @@ public class MainActivity extends AppCompatActivity {
             ProgressUpdateWrapper progressUpdate = values[0];
             Log.d(TAG, "Server Message --------> " + "\n\tMessage: " + progressUpdate.message + "\n\tTime: " + progressUpdate.time + "\n\tSequence Number: " + progressUpdate.seqNum + "\n\tPlant Number: " + progressUpdate.plantNum);
             switch ((int) progressUpdate.plantNum) {
+                case 0:
+                    previousSeqNum = progressUpdate.seqNum;
+                    break;
                 case 1:
-                    plant1PacketLoss += progressUpdate.seqNum - plant1PreviousSeqNum - 1;
-                    plant1PreviousSeqNum = progressUpdate.seqNum;
+                    packetLoss += progressUpdate.seqNum - previousSeqNum - 1;
+                    packetLoss = packetLoss < 0? 0 : packetLoss;
+                    previousSeqNum = progressUpdate.seqNum;
                     plant1Message = progressUpdate.message;
-                    plant1Latency = progressUpdate.time - System.currentTimeMillis();
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (getSupportFragmentManager().findFragmentById(R.id.SecondFragment) != null){
-                                ((SecondFragment)getSupportFragmentManager().findFragmentById(R.id.SecondFragment)).updateInfo(getPlantInfo(1));
-                            }
-                        }
-                    });
+                    plant1Latency = System.currentTimeMillis() - progressUpdate.time;
+                    plant1Latency = plant1Latency < 0? plant1Latency * -1 : plant1Latency;
+                    break;
                 case 2:
-                    plant2PacketLoss += progressUpdate.seqNum - plant2PreviousSeqNum - 1;
-                    plant2PreviousSeqNum = progressUpdate.seqNum;
+                    packetLoss += progressUpdate.seqNum - previousSeqNum - 1;
+                    packetLoss = packetLoss < 0? 0 : packetLoss;
+                    previousSeqNum = progressUpdate.seqNum;
                     plant2Message = progressUpdate.message;
-                    plant2Latency = progressUpdate.time - System.currentTimeMillis();
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (getSupportFragmentManager().findFragmentById(R.id.ThirdFragment) != null){
-                                ((ThirdFragment)getSupportFragmentManager().findFragmentById(R.id.ThirdFragment)).updateInfo(getPlantInfo(2));
-                            }
-                        }
-                    });
+                    plant2Latency = System.currentTimeMillis() - progressUpdate.time;
+                    plant2Latency = plant2Latency < 0? plant2Latency * -1 : plant2Latency;
+                    break;
                 default:
+                    Log.d(TAG, "Case Default");
             }
         }
     }
@@ -144,9 +129,9 @@ public class MainActivity extends AppCompatActivity {
     public PlantInfo getPlantInfo(int plant) {
         switch(plant) {
             case 1:
-                return new PlantInfo(plant1Message, plant1Latency, plant1PacketLoss);
+                return new PlantInfo(plant1Message, plant1Latency, packetLoss);
             case 2:
-                return new PlantInfo(plant2Message, plant2Latency, plant2PacketLoss);
+                return new PlantInfo(plant2Message, plant2Latency, packetLoss);
             default:
                 return new PlantInfo(null, -1, -1);
         }

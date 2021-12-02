@@ -129,7 +129,7 @@ public class TcpClient {
 
                 // Listen for messages from the server while the client is active
                 while (run) {
-                    byte[] data = new byte[44];
+                    byte[] data = new byte[48];
                     Log.d(TAG, "Listening For Message");
 
                     //serverMessage = mBufferIn.readLine();
@@ -164,8 +164,6 @@ public class TcpClient {
                     if (messageListener != null) {
                         messageListener.messageReceived(message, time, seqNum, plantNum);
                     }
-
-                    Thread.sleep(2000);
                 }
 
             } catch (Exception e) {

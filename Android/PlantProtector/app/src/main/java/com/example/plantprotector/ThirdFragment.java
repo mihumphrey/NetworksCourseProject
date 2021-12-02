@@ -50,8 +50,8 @@ public class ThirdFragment extends Fragment {
         if (((MainActivity)getActivity()).isRunning()) {
             if (plantInfo.message != null){
                 ((TextView)getView().findViewById(R.id.plant_2_status)).setText(plantInfo.message);
-                ((TextView)getView().findViewById(R.id.plant_2_latency)).setText((int) plantInfo.latency);
-                ((TextView)getView().findViewById(R.id.plant_2_packet_loss)).setText((int) plantInfo.packetLoss);
+                ((TextView)getView().findViewById(R.id.plant_2_latency)).setText(plantInfo.latency);
+                ((TextView)getView().findViewById(R.id.plant_2_packet_loss)).setText(plantInfo.packetLoss);
             } else {
                 ((TextView)getView().findViewById(R.id.plant_2_status)).setText(R.string.updating);
                 ((TextView)getView().findViewById(R.id.plant_2_latency)).setText(R.string.updating);
