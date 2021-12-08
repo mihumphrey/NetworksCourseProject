@@ -1,9 +1,0 @@
-SERVER
-    * Free connections after android device disconnects -- currently left hanging
-    * Handle sigint/sigusr to terminate server gracefully
-
-RPi -- DONE --
-
-Android
-    * Display message to user when plant needs to be watered
-    * Possibly notification -- not sure if worth it, seems to be digressing a bit
