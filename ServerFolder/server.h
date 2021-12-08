@@ -29,6 +29,7 @@
 typedef struct __ANDROID__ {
 	int data;
 	struct __ANDROID__ *next;
+	int valid;
 } Android;
 
 typedef struct __Packet__ {

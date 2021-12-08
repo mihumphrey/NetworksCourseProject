@@ -5,12 +5,22 @@
 #define DEBUG(...) printf(__VA_ARGS__)
 //#define DEBUG(...)
 
+uint64_t seqnum = 0;
 
 void push(Android **head, Android *new) {
 	DEBUG("IN PUSH\n");
     new->next = *head;
     (*head) = new;
 	DEBUG("AFTER PUSH\n");
+}
+
+void invalidate(Android *head, int fd) {
+	while (head != NULL) {
+		if (head->data == fd) {
+			head->valid = 0;
+		}
+	}
+	close(fd);
 }
 
 void broadcast(Android *head, Packet *p) {
@@ -21,13 +31,12 @@ void broadcast(Android *head, Packet *p) {
     memcpy(buff + MESSAGE_LEN + sizeof(uint64_t), &p->seqnum, sizeof(uint64_t));
 	memcpy(buff + MESSAGE_LEN + sizeof(uint64_t) + sizeof(uint64_t), &p->plantnum, sizeof(uint64_t));
 	while (head != NULL) { 
-		DEBUG("IN BROADCAST LOOP\n");
-		sleep(1);
-		if (head->data != -1) {
+		if (head->data != -1 && head->valid == 1) {
 			DEBUG("\t Writing to %d\n", head->data);
 			ASSERT(write(head->data, buff, sizeof(buff)) != -1, "invalid write");
 		}
 		head = head->next;
+		sleep(1);
 	}
 	DEBUG("Wrote to device(s)\n");
 }
@@ -40,14 +49,32 @@ void *handleAndroid(void *args) {
 	Android *new = malloc(sizeof(Android));
 	new->data = client_fd;
 	new->next = NULL;
+	new->valid = 1;
 	push(&head, new);
 
-	while (1) {
+	Packet *p = malloc(sizeof(Packet));
+	memcpy(p->message, "ACK", 4);
+	p->time = 0;
+	p->seqnum = seqnum;
+	p->plantnum = 0;
+
+	char buff[sizeof(Packet)];
+
+	memcpy(buff, p->message, MESSAGE_LEN);
+    memcpy(buff + MESSAGE_LEN, &p->time, sizeof(uint64_t));
+    memcpy(buff + MESSAGE_LEN + sizeof(uint64_t), &p->seqnum, sizeof(uint64_t));
+	memcpy(buff + MESSAGE_LEN + sizeof(uint64_t) + sizeof(uint64_t), &p->plantnum, sizeof(uint64_t));
+
+	ASSERT(write(head->data, buff, sizeof(buff)) != -1, "invalid write");
+	
+	while ((read(client_fd , buff , sizeof(Packet))) > 0 ) {
 		// handle android schtuff here
 
 		// currently empty infinite loop, meaning keep connection alive, 
 		// but do not directly interact with individual server as it is created
 	}
+
+	invalidate(head, client_fd);
 
 	return NULL;
 }
@@ -58,16 +85,17 @@ void *handlePi(void *args) {
 	int read_size;
 	char buff[sizeof(Packet)];
 	//Receive a message from RPi
+	Packet *p = malloc(sizeof(Packet));
 	while ((read_size = read(client_fd , buff , sizeof(Packet))) > 0 ) {
-		Packet *p = malloc(sizeof(Packet));
 		memcpy(p->message, buff, MESSAGE_LEN);
 		memcpy(&p->time, buff + MESSAGE_LEN, sizeof(uint64_t));
 		memcpy(&p->seqnum, buff + MESSAGE_LEN + sizeof(uint64_t), sizeof(uint64_t));
-		memcpy(buff + MESSAGE_LEN + sizeof(uint64_t) + sizeof(uint64_t), &p->plantnum, sizeof(uint64_t));
+		memcpy(&p->plantnum, buff + MESSAGE_LEN + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
+		seqnum = p->seqnum;
 		broadcast(head, p);
-		DEBUG("FROM CLIENT: %s\n", p->message);
-		free(p);
+		DEBUG("FROM CLIENT: %s, TIME: %lu, SEQ: %lu, PLANT: %lu\n", p->message, p->time, p->seqnum, p->plantnum);
 	}
+	free(p);
 	return NULL;
 }
 
@@ -125,8 +153,13 @@ int main(int argc , char *argv[]) {
 		}
 	}
 
+	for (int i = 0; i < 51; i++) {
+		pthread_join(pids[i], NULL);
+	}
+
 	while (head != NULL) {
 		Android *tmp = head->next;
+		//close(head->data);
 		free(head);
 		head = tmp;
 	}

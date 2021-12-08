@@ -4,6 +4,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <time.h>
 
 #define NUM_SENSORS 2
 #define SENSOR_1 22
@@ -21,6 +22,7 @@ typedef struct __Packet__ {
     char message[MESSAGE_LEN];
     uint64_t time;
     uint64_t seqnum; 
+    uint64_t plantnum; 
 } Packet;
 
 #define ASSERT(arg, err) \
@@ -54,6 +56,7 @@ int main() {
             memcpy(p->message, buff, MESSAGE_LEN);
             memcpy(&p->time, buff + MESSAGE_LEN, sizeof(uint64_t));
             memcpy(&p->seqnum, buff + MESSAGE_LEN + sizeof(uint64_t), sizeof(uint64_t));
+            memcpy(&p->plantnum, buff + MESSAGE_LEN + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
         }
         if (yes) {
             printf("Received packet from server: \n");
@@ -92,12 +95,22 @@ void pingServer(int server) {
     Packet *p = malloc(sizeof(Packet));
 	memcpy(p->message, "PLANT NEEDS WATERING", MESSAGE_LEN);
 	p->seqnum = 240;
-	p->time = 25;
+struct timeval tv;
+
+gettimeofday(&tv, NULL);
+
+unsigned long long ms =
+    (unsigned long long)(tv.tv_sec) * 1000 +
+    (unsigned long long)(tv.tv_usec) / 1000;
+
+	p->time = ms;
+    p->plantnum = 1;
 	char buff[sizeof(Packet)];
 	printf("Writing to device\n");	
 	memcpy(buff, p->message, MESSAGE_LEN);
     memcpy(buff + MESSAGE_LEN, &p->time, sizeof(uint64_t));
     memcpy(buff + MESSAGE_LEN + sizeof(uint64_t), &p->seqnum, sizeof(uint64_t));
+    memcpy(buff + MESSAGE_LEN + 2 * sizeof(uint64_t), &p->plantnum, sizeof(uint64_t));
     write(server, buff, sizeof(buff));
     printf("Wrote to device\n");
     //printf("WROTE: %s TO CLIENT\n", buff);
